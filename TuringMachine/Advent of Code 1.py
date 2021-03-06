@@ -1,4 +1,4 @@
-from TuringMachine import TM, Dir, Special
+from TuringMachine.TuringMachine import TM, Dir, Special
 
 # formats input into one suitable for the TM
 # honestly kinda cheating since recognising Unicode
