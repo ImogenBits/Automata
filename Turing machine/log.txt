@@ -1,0 +1,78 @@
+  a  a  a  b  b  b  c  c  c
+  0
+  T  a  a  b  b  b  c  c  c
+     1
+  T  a  a  b  b  b  c  c  c
+        1
+  T  a  a  b  b  b  c  c  c
+           1
+  T  a  a  T  b  b  c  c  c
+              2
+  T  a  a  T  b  b  c  c  c
+                 2
+  T  a  a  T  b  b  c  c  c
+                    2
+  T  a  a  T  b  b  T  c  c
+                 0
+  T  a  a  T  b  b  T  c  c
+              0
+  T  a  a  T  b  b  T  c  c
+           0
+  T  a  a  T  b  b  T  c  c
+        0
+  T  a  T  T  b  b  T  c  c
+           1
+  T  a  T  T  b  b  T  c  c
+              1
+  T  a  T  T  T  b  T  c  c
+                 2
+  T  a  T  T  T  b  T  c  c
+                    2
+  T  a  T  T  T  b  T  c  c
+                       2
+  T  a  T  T  T  b  T  T  c
+                    0
+  T  a  T  T  T  b  T  T  c
+                 0
+  T  a  T  T  T  b  T  T  c
+              0
+  T  a  T  T  T  b  T  T  c
+           0
+  T  a  T  T  T  b  T  T  c
+        0
+  T  a  T  T  T  b  T  T  c
+     0
+  T  T  T  T  T  b  T  T  c
+        1
+  T  T  T  T  T  b  T  T  c
+           1
+  T  T  T  T  T  b  T  T  c
+              1
+  T  T  T  T  T  b  T  T  c
+                 1
+  T  T  T  T  T  T  T  T  c
+                    2
+  T  T  T  T  T  T  T  T  c
+                       2
+  T  T  T  T  T  T  T  T  c
+                          2
+  T  T  T  T  T  T  T  T  T
+                       0
+  T  T  T  T  T  T  T  T  T
+                    0
+  T  T  T  T  T  T  T  T  T
+                 0
+  T  T  T  T  T  T  T  T  T
+              0
+  T  T  T  T  T  T  T  T  T
+           0
+  T  T  T  T  T  T  T  T  T
+        0
+  T  T  T  T  T  T  T  T  T
+     0
+  T  T  T  T  T  T  T  T  T
+  0
+  B  T  T  T  T  T  T  T  T  T
+  0
+  B  T  T  T  T  T  T  T  T  T
+     3
