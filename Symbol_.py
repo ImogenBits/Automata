@@ -1,5 +1,4 @@
 from os import error
-from typing import Sequence, Union, TypeVar
 
 
 #* Symbols of some alphabet
