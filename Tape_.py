@@ -12,13 +12,13 @@ class Tape:
         self.offset = 0
     
     # erases all input on the tape
-    def erase(self):
+    def clear(self):
         self.arr = list()
         self.offset = 0
 
     # inputs a new word onto the tape
     def input(self, word: list[Symbol]) -> None:
-        self.erase()
+        self.clear()
         self.arr = word.copy()
         self.offset = 0
     
