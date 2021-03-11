@@ -31,7 +31,7 @@ class Tape:
         index = self.offset + pos
 
         if index >= len(self.arr):
-            self.arr.extend([self.blank] * (index - len(self.arr)))
+            self.arr.extend([self.blank] * (index - len(self.arr) + 1))
         elif index < 0:
             self.arr = ([self.blank] * (-index)) + self.arr
             self.offset -= index

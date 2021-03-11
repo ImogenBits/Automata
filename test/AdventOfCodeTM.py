@@ -22,8 +22,8 @@ L, N, R = Direction.L, Direction.N, Direction.R
 
 states = set(range(78))
 inputAlph = {
-    Symbol("0"),
-    Symbol("1"),
+    T0,
+    T1,
     H
 }
 B = Symbol("B")
@@ -269,9 +269,11 @@ def transformInput(inputList: list[str]) -> list[Symbol]:
     res = ""
     for line in inputList:
         res += "#" + "{:b}".format(int(line.strip()))
-    return [c for c in res[1:]]
+    return [Symbol(c) for c in res[1:]]
 
 inputWord: list[Symbol] = []
 
 with open("test big input.txt", "r") as f:
     inputWord = transformInput(f.readlines())
+
+tm(inputWord)

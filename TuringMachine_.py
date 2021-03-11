@@ -1,5 +1,6 @@
+from __future__ import annotations
 from enum import IntEnum
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 from Symbol_ import Symbol
 from Tape_ import Tape
@@ -31,7 +32,7 @@ class TransFunc():
             
             if fillGeneric is not None:
                 for symbol in alphabet:
-                    if (state, symbol) not in stateDict:
+                    if (state, symbol) not in self.dict:
                         if fillGeneric[1].isGeneric:
                             self.dict[(state, symbol)] \
                                 = (fillGeneric[0], symbol, fillGeneric[2])
@@ -40,6 +41,12 @@ class TransFunc():
     
     def __call__(self, state: State, symbol: Symbol) -> TransRet:
         return self.dict[(state, symbol)]
+
+class InstantaneousDescription:
+    def __init__(self, tm: TuringMachine) -> None:
+        self.head = tm.head
+        self.state = tm.state
+        self.tape = tm.tape.asList().copy()
 
 #* a Turing machine with a single bidirectional tape and head
 class TuringMachine:
@@ -51,7 +58,7 @@ class TuringMachine:
                  inputAlphabet: set[Symbol],
                  startingState: State,
                  finalStates: set[State],
-                 transition: Union[TransFunc, TransDict]
+                 transition: TransFunc | TransDict
                  ) -> None:
         self.states = states.copy()
         self.tapeAlphabet = tapeAlphabet.copy()
@@ -80,6 +87,9 @@ class TuringMachine:
         self.head += dir
         self.state = nextState
 
+    def makeID(self) -> InstantaneousDescription:
+        return InstantaneousDescription(self)
+
     def __call__(self,
                  input: Optional[list[Symbol]] = None,
                  logFile: Optional[str] = None,
@@ -87,27 +97,28 @@ class TuringMachine:
         if input is not None:
             self.reset()
             self.tape.input(input)
-        
+
         if logFile is not None:
-            idList: list[list[Symbol]] = []
-            idList.append(self.tape.asList())
-            
+            idList: list[InstantaneousDescription] = []
+            idList.append(self.makeID())
+
             while self.state not in self.finalStates:
                 self.step()
-                idList.append(self.tape.asList())
+                idList.append(self.makeID())
             
             with open(logFile, "w") as f:
                 for id in idList:
-                    L1 = "".join({f"{s.c: >3}" for s in id})
-                    L2 = "   " * self.head + f"{self.state: >3}"
+                    L1 = "".join([f"{s: >3}" for s in id.tape])
+                    L2 = "   " * id.head + f"{id.state: >3}"
                     f.write(L1 + "\n" + L2 + "\n")
         else:
             while self.state not in self.finalStates:
                 self.step()
-        
+
         retVal: list[Symbol] = []
         while self.tape.read(self.head) != self.blankSymbol:
             retVal.append(self.tape.read(self.head))
             self.head += 1
         
         return retVal
+
