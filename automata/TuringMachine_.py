@@ -2,8 +2,8 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import Any, Optional
 
-from Symbol_ import Symbol
-from Tape_ import Tape
+from automata.Symbol_ import Symbol
+from automata.Tape_ import Tape
 
 State = Any
 
@@ -20,8 +20,7 @@ TransDict = dict[State, dict[Symbol, TransRet]]
 class TransFunc():
     def __init__(self, trans: TransDict, alphabet: set[Symbol]) -> None:
         self.dict: dict[tuple[State, Symbol], TransRet]
-        self.dict = dict()
-
+        self.dict = {}
         for state, stateDict in trans.items():
             fillGeneric: Optional[TransRet] = None
             for symbol, retVal in stateDict.items():

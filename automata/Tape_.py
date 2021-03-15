@@ -1,5 +1,4 @@
-
-from Symbol_ import Symbol
+from automata.Symbol_ import Symbol
 
 #* The tape of a Turing machine
 #  has a potentially infinite ist of symbols
@@ -10,7 +9,7 @@ class Tape:
         self.blank = blankSymbol
         self.arr: list[Symbol] = list()
         self.offset = 0
-    
+
     # erases all input on the tape
     def clear(self):
         self.arr = list()
@@ -42,3 +41,6 @@ class Tape:
     def read(self, pos: int) -> Symbol:
         index = self.offset + pos
         return self.arr[index] if 0 <= index < len(self.arr) else self.blank
+
+    def bounds(self) -> tuple[int, int]:
+        return (self.offset, self.offset + len(self.arr))
