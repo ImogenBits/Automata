@@ -2,8 +2,8 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import Any, Optional
 
-from automata.Symbol_ import Symbol
-from automata.Tape_ import Tape
+from automata.Symbol import Symbol
+from automata.Tape import Tape
 
 State = Any
 
@@ -45,7 +45,7 @@ class InstantaneousDescription:
     def __init__(self, tm: TuringMachine) -> None:
         self.head = tm.head
         self.state = tm.state
-        self.tape = tm.tape.asList().copy()
+        self.tape = tm.tape.asList()
 
 #* a Turing machine with a single bidirectional tape and head
 class TuringMachine:

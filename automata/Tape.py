@@ -1,4 +1,4 @@
-from automata.Symbol_ import Symbol
+from automata.Symbol import Symbol
 
 #* The tape of a Turing machine
 #  has a potentially infinite ist of symbols
@@ -23,7 +23,7 @@ class Tape:
     
     # returns the used portion of the tape
     def asList(self) -> list[Symbol]:
-        return self.arr
+        return self.arr.copy()
     
     # writes a symbol to a specified position of the tape
     def write(self, pos: int, symbol: Symbol) -> None:
@@ -43,4 +43,4 @@ class Tape:
         return self.arr[index] if 0 <= index < len(self.arr) else self.blank
 
     def bounds(self) -> tuple[int, int]:
-        return (self.offset, self.offset + len(self.arr))
+        return (-self.offset, len(self.arr) - self.offset)

@@ -8,12 +8,16 @@ from os import error
 #  a char for internal representation (maybe),
 #  and a colour for cellular automata (or just pretty TMs)
 class Symbol:
-    def __init__(self, c: str, isGeneric: bool = False):
+    def __init__(self, c: str,
+                 isGeneric: bool = False,
+                 color: tuple[int, int, int] = (0, 0, 0)
+                 ) -> None:
         if len(c) > 3:
             raise error(f"Symbol needs to be a single char, not \"{c}\" with length {len(c)}")
         self.c = c
         self.isGeneric = isGeneric
         self.__name__ = c
+        self.color = color
 
     def __eq__(self, o: Symbol) -> bool:
         return self.c == o.c
@@ -24,6 +28,9 @@ class Symbol:
     def __str__(self) -> str:
         return self.c
     
+    def __repr__(self) -> str:
+        return self.c
+
     def __format__(self, format_spec: str) -> str:
         return format(str(self), format_spec)
     

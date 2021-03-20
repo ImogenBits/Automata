@@ -1,5 +1,5 @@
-from TuringMachine_ import TransDict, TuringMachine, Direction
-from Symbol_ import Symbol
+from automata.TuringMachine import TransDict, TuringMachine, Direction
+from automata.Symbol import Symbol
 
 X = Symbol("X", True)
 
