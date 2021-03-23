@@ -82,10 +82,11 @@ class Tape:
                 else:
                     stop = -1 * len(self.__left)
 
+            tape = Tape(self.blank)
             if step > 0:
-                if start >= stop: return Tape(self.blank)
+                if start >= stop: return tape
                 
-                lstart = 
+                
 
         else:
             return self.read(key)
@@ -102,7 +103,7 @@ class Tape:
         try:
             return next(self.__iter)
         except StopIteration:
-            if self.__iterLeft:
+            if hasattr(self, "__iterLeft"):
                 del self.__iterLeft
                 self.__iter = iter(self.__right)
                 return next(self.__iter)
