@@ -1,6 +1,6 @@
 from __future__ import annotations
 from enum import IntEnum
-from typing import Any, Optional
+from typing import Any
 
 from automata.Symbol import Symbol
 from automata.Tape import Tape
@@ -22,7 +22,7 @@ class TransFunc():
         self.dict: dict[tuple[State, Symbol], TransRet]
         self.dict = {}
         for state, stateDict in trans.items():
-            fillGeneric: Optional[TransRet] = None
+            fillGeneric: TransRet | None = None
             for symbol, retVal in stateDict.items():
                 if symbol.isGeneric:
                     fillGeneric = retVal
@@ -41,11 +41,11 @@ class TransFunc():
     def __call__(self, state: State, symbol: Symbol) -> TransRet:
         return self.dict[(state, symbol)]
 
-class InstantaneousDescription:
+class TuringMachineID:
     def __init__(self, tm: TuringMachine) -> None:
         self.head = tm.head
         self.state = tm.state
-        self.tape = tm.tape.asList()
+        self.tape = tm.tape.copy()
 
 #* a Turing machine with a single bidirectional tape and head
 class TuringMachine:
@@ -53,7 +53,7 @@ class TuringMachine:
     def __init__(self,
                  states: set[State],
                  tapeAlphabet: set[Symbol],
-                 blankSymbol: Symbol,
+                 blank: Symbol,
                  inputAlphabet: set[Symbol],
                  startingState: State,
                  finalStates: set[State],
@@ -61,7 +61,7 @@ class TuringMachine:
                  ) -> None:
         self.states = states.copy()
         self.tapeAlphabet = tapeAlphabet.copy()
-        self.blankSymbol = blankSymbol
+        self.blank = blank
         self.inputAlphabet = inputAlphabet.copy()
         self.startingState = startingState
         self.finalStates = finalStates.copy()
@@ -70,9 +70,15 @@ class TuringMachine:
         else:
             self.transFunc = transition
 
-        self.tape = Tape(blankSymbol)
+        self.tape = Tape(blank)
         self.head = 0
         self.state = startingState
+
+    def read(self) -> Symbol:
+        return self.tape[self.head]
+
+    def write(self, symbol: Symbol) -> None:
+        self.tape[self.head] = symbol
 
     def reset(self) -> None:
         self.tape.clear()
@@ -80,44 +86,41 @@ class TuringMachine:
         self.state = self.startingState
 
     def step(self) -> None:
-        nextState, nextSymbol, dir = \
-            self.transFunc(self.state, self.tape.read(self.head))
-        self.tape.write(self.head, nextSymbol)
+        nextState, nextSymbol, dir = self.transFunc(self.state, self.read())
+        self.write(nextSymbol)
         self.head += dir
         self.state = nextState
 
-    def makeID(self) -> InstantaneousDescription:
-        return InstantaneousDescription(self)
-
     def __call__(self,
-                 input: Optional[list[Symbol]] = None,
-                 logFile: Optional[str] = None,
+                 input: list[Symbol] | None = None,
+                 logFile: str | None = None,
                  ) -> list[Symbol]:
         if input is not None:
             self.reset()
             self.tape.input(input)
 
         if logFile is not None:
-            idList: list[InstantaneousDescription] = []
-            idList.append(self.makeID())
+            idList: list[TuringMachineID] = []
+            idList.append(TuringMachineID(self))
 
             while self.state not in self.finalStates:
                 self.step()
-                idList.append(self.makeID())
+                idList.append(TuringMachineID(self))
             
             with open(logFile, "w") as f:
                 for id in idList:
-                    L1 = "".join([f"{s: >3}" for s in id.tape])
-                    L2 = "   " * id.head + f"{id.state: >3}"
-                    f.write(L1 + "\n" + L2 + "\n")
+                    f.write(str(id))
         else:
             while self.state not in self.finalStates:
                 self.step()
 
         retVal: list[Symbol] = []
-        while self.tape.read(self.head) != self.blankSymbol:
-            retVal.append(self.tape.read(self.head))
+        while self.read() != self.blank:
+            retVal.append(self.read())
             self.head += 1
         
         return retVal
 
+    def __str__(self) -> str:
+        return f"{self.tape}\n{self.state: >self.head+3}\n"
+         

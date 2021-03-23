@@ -3,10 +3,9 @@ import itertools
 import random
 from PIL import Image, ImageDraw
 from collections import deque
-from typing import Optional
 from os import error
 
-from automata.Symbol import Symbol
+from automata.Symbol import Symbol, SymbolIter
 from automata.Tape import Tape
 
 Color = tuple[int, int, int]
@@ -39,7 +38,7 @@ class RuleFunc:
         elif isinstance(rule, dict) and isinstance(alphabet, set):
             for input, output in rule.items():
                 if anyGeneric(input):
-                    for tup, out in Symbol.iterateGenerics(input, output, alphabet):
+                    for tup, out in SymbolIter(input, output, alphabet):
                         self.dict[tup] = out
                 else:
                     self.dict[input] = output
@@ -73,9 +72,9 @@ class CellularAutomaton:
     def reset(self):
         self.tape.clear()
 
-    def getID(self) -> tuple[list[Symbol], int, int]:
+    def getID(self) -> tuple[Tape, int, int]:
         a, b = self.tape.bounds()
-        return (self.tape.asList(), a, b)
+        return (self.tape.copy(), a, b)
 
     def step(self):
         hasChanged = False
@@ -95,9 +94,9 @@ class CellularAutomaton:
             self.shouldHalt = True
 
     def __call__(self,
-                 input: Optional[list[Symbol]] = None,
-                 randInputlength: Optional[int] = None,
-                 log: Optional[CALog] = None,
+                 input: list[Symbol] |None = None,
+                 randInputlength: int | None = None,
+                 log: CALog | None = None,
                  ) -> list[Symbol]:
         self.reset()
         if input is not None:
@@ -129,15 +128,15 @@ class CALog:
     def __init__(self,
                  ca: CellularAutomaton,
                  scale: int = 1,
-                 width: Optional[int] = 200,
-                 generations: Optional[int] = 100
+                 width: int | None = 200,
+                 generations: int | None = 100
                  ) -> None:
         self.ca = ca
         self.scale = scale
         self.width = width
         self.buffer = 3 * scale
         self.generations = generations
-        self.arr: list[tuple[list[Symbol], int, int]] = []
+        self.arr: list[tuple[Tape, int, int]] = []
 
     def log(self) -> None:
         self.arr.append(self.ca.getID())
@@ -153,7 +152,7 @@ class CALog:
         if self.generations is None:
             self.generations = len(self.arr)
 
-        start, end = 0, 0
+        _, start, end = self.arr[0]
         for (_, a, b) in self.arr:
             if a < start:
                 start = a
