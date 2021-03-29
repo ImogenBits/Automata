@@ -26,8 +26,8 @@ class Symbol:
         return self.c == o.c
 
     def __hash__(self) -> int:
-        return self.c.__hash__()
-
+        return hash(self.c)
+        
     def __str__(self) -> str:
         return self.c
     

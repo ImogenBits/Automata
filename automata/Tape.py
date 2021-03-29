@@ -1,16 +1,10 @@
 from __future__ import annotations
+from math import ceil
+from typing import Callable
 from automata.Symbol import Symbol
 
-def tapeIndices(slice: slice, lLen: int, rlen: int) -> tuple[int, int, int]:
-    if step < 0:
-        tmp = start
-        start = stop
-        stop = tmp
-    pass
-
-class TapeRange:
-    def __init__(self, start: int, stop: int, step: int) -> None:
-
+def getEdge(a: int, step: int) -> int:
+    return a + (step - (a % step))
 
 #* The tape of a Turing machine
 #  has a potentially infinite ist of symbols
@@ -28,9 +22,13 @@ class Tape:
         self.__left = list()
 
     # inputs a new word onto the tape
-    def input(self, word: list[Symbol]) -> None:
-        self.__left.clear()
-        self.__right = word.copy()
+    def input(self, word: list[Symbol], offset: int = 0) -> None:
+        self.clear()
+        for i, s in enumerate(word):
+            self[i + offset] = s
+        
+        #self.__left.clear()
+        #self.__right = word.copy()
     
     # returns the used portion of the tape
     def copy(self) -> Tape:
@@ -67,29 +65,63 @@ class Tape:
         else:
             return arr[pos]
         
-    def __getitem__(self, key: int | slice) -> Symbol | Tape:
-        if isinstance(key, slice):
-            start, stop, step = key.start, key.stop, key.step
-            step  = 1 if step is None else step
-            if start is None:
-                if step > 0:
-                    start = -1 * len(self.__left)
-                else:
-                    start = len(self.__right) - 1
-            if stop is None:
-                if step > 0:
-                    stop = len(self.__right) - 1
-                else:
-                    stop = -1 * len(self.__left)
+    def __getitem__(self,
+                    key: int | slice | tuple[slice, int],
+                   ) -> Symbol | Tape:
+        if isinstance(key, int):
+            return self.read(key)
 
-            tape = Tape(self.blank)
+        if isinstance(key, tuple):
+            offset = key[1]
+            key = key[0]
+        else:
+            offset = 0
+        start, stop, step = key.start, key.stop, key.step
+        
+        step = 1 if step is None else step
+        if start is None:
             if step > 0:
-                if start >= stop: return tape
-                
-                
+                start = -1 * len(self.__left)
+            else:
+                start = len(self.__right) - 1
+        if stop is None:
+            if step > 0:
+                stop = len(self.__right)
+            else:
+                stop = -1 * len(self.__left) - 1
+
+        tape = Tape(self.blank)
+        if (step > 0 and start >= stop) or (step < 0 and start <= stop):
+            return tape
+
+        if step > 0:
+            firstElem = start - (start % step) + offset
+            if start % step > offset:
+                firstElem += step
+            endLeft = stop if stop < 0 else 0
+            tar = -1 * ceil((endLeft - firstElem) / step)
+
+            currElem = firstElem
+            while currElem < stop:
+                tape[tar] = self.read(currElem)
+                currElem += step
+                tar += 1
+            return tape
 
         else:
-            return self.read(key)
+            step *= -1
+            firstElem = start - (start % step) + offset
+            if start % step > offset:
+                firstElem -= step
+            endRight = stop if stop > 0 else 0
+            tar = -1 * ceil(-(endRight - firstElem) / step)
+
+            currElem = firstElem
+            while currElem > stop:
+                tape[tar] = self.read(currElem)
+                currElem -= step
+                tar += 1
+            return tape
 
     def bounds(self) -> tuple[int, int]:
         return len(self.__left), len(self.__right)
@@ -116,4 +148,6 @@ class Tape:
 
     def __str__(self) -> str:
         return "".join([f"{s: >3}" for s in self])
-        
+    
+    def __repr__(self) -> str:
+        return str(self.__left[::-1])[:-1] + f", |{self[0]}|, " + str(self.__right[1:])[1:]
