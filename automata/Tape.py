@@ -1,6 +1,5 @@
 from __future__ import annotations
 from math import ceil
-from typing import Callable
 from automata.Symbol import Symbol
 
 def getEdge(a: int, step: int) -> int:
@@ -26,16 +25,6 @@ class Tape:
         self.clear()
         for i, s in enumerate(word):
             self[i + offset] = s
-        
-        #self.__left.clear()
-        #self.__right = word.copy()
-    
-    # returns the used portion of the tape
-    def copy(self) -> Tape:
-        n = Tape(self.blank)
-        n.__right = self.__right.copy()
-        n.__left = self.__left.copy()
-        return n
     
     # writes a symbol to a specified position of the tape
     def write(self, pos: int, symbol: Symbol) -> None:
@@ -64,13 +53,11 @@ class Tape:
             return self.blank
         else:
             return arr[pos]
-        
-    def __getitem__(self,
-                    key: int | slice | tuple[slice, int],
-                   ) -> Symbol | Tape:
-        if isinstance(key, int):
-            return self.read(key)
 
+    def copy(self,
+             key: slice | tuple[slice, int] = slice(None),
+             moveToStart: bool = False
+             ) -> Tape:
         if isinstance(key, tuple):
             offset = key[1]
             key = key[0]
@@ -98,8 +85,12 @@ class Tape:
             firstElem = start - (start % step) + offset
             if start % step > offset:
                 firstElem += step
-            endLeft = stop if stop < 0 else 0
-            tar = -1 * ceil((endLeft - firstElem) / step)
+
+            if moveToStart:
+                tar = 0
+            else:
+                tar = -1 * ceil((min(stop, -1) - firstElem) / step)
+                tar = min(tar, 0)
 
             currElem = firstElem
             while currElem < stop:
@@ -111,10 +102,14 @@ class Tape:
         else:
             step *= -1
             firstElem = start - (start % step) + offset
-            if start % step > offset:
+            if start % step < offset:
                 firstElem -= step
-            endRight = stop if stop > 0 else 0
-            tar = -1 * ceil(-(endRight - firstElem) / step)
+
+            if moveToStart:
+                tar = 0
+            else:
+                tar = -1 * ceil((firstElem - max(stop, 0)) / step)
+                tar = min(tar, 0)
 
             currElem = firstElem
             while currElem > stop:
@@ -122,6 +117,14 @@ class Tape:
                 currElem -= step
                 tar += 1
             return tape
+
+    def __getitem__(self,
+                    key: int | slice | tuple[slice, int],
+                   ) -> Symbol | Tape:
+        if isinstance(key, int):
+            return self.read(key)
+        else:
+            return self.copy(key)
 
     def bounds(self) -> tuple[int, int]:
         return len(self.__left), len(self.__right)
@@ -146,8 +149,19 @@ class Tape:
     def __len__(self) -> int:
         return len(self.__left) + len(self.__right)
 
+    def toStrList(self) -> list[str]:
+        l = [str(c) for c in self.__left[::-1]]
+        r = [str(c) for c in self.__right[1:]]
+        return l + [f"|{self[0]}|"] + r
+
     def __str__(self) -> str:
-        return "".join([f"{s: >3}" for s in self])
+        return "".join(self.toStrList())
     
     def __repr__(self) -> str:
-        return str(self.__left[::-1])[:-1] + f", |{self[0]}|, " + str(self.__right[1:])[1:]
+        return f"""[{", ".join(self.toStrList())}]"""
+    
+    def trim(self) -> Tape:
+        for l in [self.__left, self.__right]:
+            while len(l) != 0 and l[-1] == self.blank:
+                l.pop()
+        return self

@@ -1,6 +1,7 @@
 from automata.Tape import *
 from automata.Symbol import *
 
+
 z = Symbol("0")
 a = Symbol("a")
 b = Symbol("b")
@@ -9,9 +10,11 @@ d = Symbol("d")
 
 
 aTape = Tape(z)
-aTape.input([a, b, c, a, b, c, a, b, c], -3)
+aTape.input([a, b, c, d] * 10, -10)
 
-bTape = aTape[::]
-cTape = aTape[:10:]
+#bTape = aTape[5:10]
+cTape = aTape[5:-10:-2]
+
+
 
 print(aTape)
