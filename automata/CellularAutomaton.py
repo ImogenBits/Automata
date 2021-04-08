@@ -5,10 +5,9 @@ from PIL import Image, ImageDraw
 from collections import deque
 from os import error
 
-from automata.Symbol import Symbol, SymbolIter
+from automata.Symbol import Alphabet, Symbol, SymbolIter
 from automata.Tape import Tape
 
-Color = tuple[int, int, int]
 RuleDict = dict[tuple[Symbol, ...], Symbol]
 RuleNumber = int
 
@@ -26,25 +25,22 @@ class RuleFunc:
     def __init__(self,
                  rule: RuleDict | RuleNumber,
                  neighborhoood: int,
-                 alphabet: set[Symbol] | list[Symbol]
+                 alphabet: Alphabet
                  ) -> None:
         self.dict: RuleDict = {}
-        if isinstance(rule, RuleNumber) and isinstance(alphabet, list):
+        if isinstance(rule, RuleNumber):
             i = 0
             l = len(alphabet)
             for comb in itertools.product(alphabet, repeat=neighborhoood):
                 self.dict[comb] = alphabet[digitAt(rule, i, l)]
                 i += 1
-        elif isinstance(rule, dict) and isinstance(alphabet, set):
+        else:
             for input, output in rule.items():
                 if anyGeneric(input):
                     for tup, out in SymbolIter(input, output, alphabet):
                         self.dict[tup] = out
                 else:
                     self.dict[input] = output
-        else:
-            raise error(f"""Created a RuleFunc with RuleNumber {rule}
-                            but the alphabet was a set""")
     
     def __call__(self, input: tuple[Symbol, ...]) -> Symbol:
         return self.dict[input]
@@ -53,7 +49,7 @@ class CellularAutomaton:
     def __init__(self,
                  rule: RuleFunc | RuleDict | RuleNumber,
                  neighborhood: int = 3,
-                 alphabet: set[Symbol] | list[Symbol] = {Symbol("0"), Symbol("1")},
+                 alphabet: Alphabet = Alphabet({Symbol("0"), Symbol("1")}),
                  blank: Symbol = Symbol("0")
                  ) -> None:
         self.neighborhood = neighborhood
@@ -72,24 +68,23 @@ class CellularAutomaton:
     def reset(self):
         self.tape.clear()
 
-    def getID(self) -> tuple[Tape, int, int]:
-        a, b = self.tape.bounds()
-        return (self.tape.copy(), a, b)
+    def getID(self) -> Tape:
+        return self.tape.copy()
 
     def step(self):
         hasChanged = False
+        tape = self.tape
         neighborhood = self.neighborhood
-        left, right = self.tape.bounds()
-        buffer = deque([self.blank] * neighborhood,
-                        maxlen = neighborhood)
+        left, right = tape.bounds()
+        buffer = deque([self.blank] * neighborhood, maxlen = neighborhood)
         cOff = self.neighborhood // 2
-        for i in range(left - neighborhood, right):
-            tape = self.tape
+        for i in range(left - neighborhood + 1, right + 1):
             buffer.append(tape.read(i + neighborhood - 1))
             newSymbol = self.ruleFunc(tuple(buffer))
             if tape.read(i + cOff) != newSymbol:
                 hasChanged = True
                 tape.write(i + cOff, newSymbol)
+                pass
         if not hasChanged:
             self.shouldHalt = True
 
@@ -97,7 +92,7 @@ class CellularAutomaton:
                  input: list[Symbol] |None = None,
                  randInputlength: int | None = None,
                  log: CALog | None = None,
-                 ) -> list[Symbol]:
+                 ) -> Tape:
         self.reset()
         if input is not None:
             self.tape.input(input)
@@ -120,73 +115,61 @@ class CellularAutomaton:
                 i += 1
                 log.log()
 
-
-        return self.tape.asList()
+        return self.tape.copy()
 
 
 class CALog:
     def __init__(self,
                  ca: CellularAutomaton,
-                 scale: int = 1,
+                 scale: int = 10,
                  width: int | None = 200,
                  generations: int | None = 100
                  ) -> None:
         self.ca = ca
         self.scale = scale
         self.width = width
-        self.buffer = 3 * scale
         self.generations = generations
-        self.arr: list[tuple[Tape, int, int]] = []
+        self.arr: list[Tape] = []
 
     def log(self) -> None:
         self.arr.append(self.ca.getID())
+        pass
 
-    def createImage(self) -> None:
-        if self.width is None:
-            self.width = 0
-            for (l, _, _) in self.arr:
-                le = len(l)
-                if le > self.width:
-                    self.width = le
+    def createImage(self) -> Image.Image:
+        generations, width = self.generations, self.width
+        if generations is None:
+            generations = len(self.arr)
+        arr = self.arr[:generations]
 
-        if self.generations is None:
-            self.generations = len(self.arr)
-
-        _, start, end = self.arr[0]
-        for (_, a, b) in self.arr:
-            if a < start:
-                start = a
-            if end < b:
-                end = b
+        if width is None:
+            width = 0
+            for t in arr:
+                width = max(width, len(t))
+                
+        lBound, rBound = 0, 0
+        for t in arr:
+            l, r = t.bounds()
+            lBound = min(lBound, l)
+            rBound = max(rBound, r)
         
-        if end - start <= self.width:
-            imStart = start
+        if rBound - lBound <= width:
+            imStart = lBound - ((width - (rBound - lBound)) // 2)
         else:
-            startLen = len(self.arr[0][0])
-            imStart = -((self.width - startLen) // 2)
-        
+            imStart = -((width - len(arr[0])) // 2)
+        imEnd = imStart + width
 
-        imWidth = self.scale * self.width + 2 * self.buffer
-        imHeight = self.scale * self.generations + 2 * self.buffer
-
+        buffer = 3 * self.scale
+        imWidth = self.scale * width + 2 * buffer
+        imHeight = self.scale * generations + 2 * buffer
 
         self.image = Image.new("RGB", (imWidth, imHeight), "#000000")
         image = ImageDraw.ImageDraw(self.image)
 
-        for i, (gen, start, end) in enumerate(self.arr):
-            arr: list[Symbol] = []
-            if imStart <= start:
-                arr = [self.ca.blank] * (start - imStart)
-            arr += gen
-            if len(arr) < self.width:
-                arr += [self.ca.blank] * (self.width - len(arr))
-            elif len(arr) > self.width:
-                arr = arr[:self.width]
-
-            for j, symbol in enumerate(arr):
-                x = self.buffer + self.scale * j
-                y = self.buffer + self.scale * i
+        for i, t in enumerate(arr):
+            for j, symbol in enumerate(t.copy(imStart, imEnd)):
+                x = buffer + self.scale * j
+                y = buffer + self.scale * i
                 image.rectangle([x, y, x + self.scale, y + self.scale],
                                 fill = symbol.color)
-        
-        self.image.show()
+
+        return self.image

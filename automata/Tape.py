@@ -55,17 +55,13 @@ class Tape:
             return arr[pos]
 
     def copy(self,
-             key: slice | tuple[slice, int] = slice(None),
+             start: int | None = None,
+             stop: int | None = None,
+             step: int = 1,
+             offset: int = 0,
              moveToStart: bool = False
              ) -> Tape:
-        if isinstance(key, tuple):
-            offset = key[1]
-            key = key[0]
-        else:
-            offset = 0
-        start, stop, step = key.start, key.stop, key.step
         
-        step = 1 if step is None else step
         if start is None:
             if step > 0:
                 start = -1 * len(self.__left)
@@ -89,7 +85,7 @@ class Tape:
             if moveToStart:
                 tar = 0
             else:
-                tar = -1 * ceil((min(stop, -1) - firstElem) / step)
+                tar = -1 * ceil((min(stop, 0) - firstElem) / step)
                 tar = min(tar, 0)
 
             currElem = firstElem
@@ -123,27 +119,31 @@ class Tape:
                    ) -> Symbol | Tape:
         if isinstance(key, int):
             return self.read(key)
+        elif isinstance(key, slice):
+            return self.copy(key.start, key.stop, key.step)
         else:
-            return self.copy(key)
+            slc = key[0]
+            return self.copy(slc.start, slc.stop, slc.step, key[1])
 
     def bounds(self) -> tuple[int, int]:
-        return len(self.__left), len(self.__right)
+        return -1 * len(self.__left), len(self.__right) - 1
 
     def __iter__(self) -> Tape:
         self.__iterLeft = True
-        self.__iter = reversed(self.__left)
+        self.__iterObj = reversed(self.__left)
         return self
     
     def __next__(self) -> Symbol:
         try:
-            return next(self.__iter)
+            return next(self.__iterObj)
         except StopIteration:
-            if hasattr(self, "__iterLeft"):
-                del self.__iterLeft
-                self.__iter = iter(self.__right)
-                return next(self.__iter)
+            if self.__iterLeft:
+                self.__iterLeft = False
+                self.__iterObj = iter(self.__right)
+                return next(self.__iterObj)
             else:
-                del self.__iter
+                del self.__iterObj
+                del self.__iterLeft
                 raise StopIteration()
     
     def __len__(self) -> int:

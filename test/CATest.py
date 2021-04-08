@@ -1,14 +1,13 @@
-from automata.Symbol import Symbol
+from automata.Symbol import Alphabet, Symbol
 from automata.CellularAutomaton import CellularAutomaton, CALog
 
 
 Zero = Symbol("0", color = (200, 200, 200))
 One = Symbol("1", color = (50, 50, 50))
 
-ca = CellularAutomaton(18, 3, [Zero, One], Zero)
+ca = CellularAutomaton(18, 3, Alphabet([Zero, One]), Zero)
 
 if __name__ == "__main__":
-    log = CALog(ca, 10, None, None)
+    log = CALog(ca, 10, 250)
     ca([One], log = log)
-    log.createImage()
-    print(1)
+    log.createImage().show()

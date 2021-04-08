@@ -100,7 +100,7 @@ class Alphabet(set[Symbol]):
 #* Overloaded functions from set
  
     def __iter__(self) -> Iterator[Symbol]:
-        return self.__list.__iter__()
+        return iter(self.__list)
 
     def union(self, *s: Iterable[Symbol]) -> Alphabet:
         retAlph = self.copy()

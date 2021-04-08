@@ -75,7 +75,7 @@ class TuringMachine:
         self.state = startingState
 
     def read(self) -> Symbol:
-        return self.tape[self.head]
+        return self.tape.read(self.head)
 
     def write(self, symbol: Symbol) -> None:
         self.tape[self.head] = symbol
