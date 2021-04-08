@@ -1,5 +1,6 @@
 from __future__ import annotations
 from math import ceil
+from typing import Sequence
 from automata.Symbol import Symbol
 
 def getEdge(a: int, step: int) -> int:
@@ -8,12 +9,17 @@ def getEdge(a: int, step: int) -> int:
 #* The tape of a Turing machine
 #  has a potentially infinite ist of symbols
 #  only the so far accessed portion is stored
-class Tape:
+class Tape(Sequence[Symbol]):
     # has a list storing the used portion and a blank symbol on the rest of it 
-    def __init__(self, blankSymbol: Symbol) -> None:
+    def __init__(self,
+                 blankSymbol: Symbol,
+                 word: Sequence[Symbol] | None = None
+                 ) -> None:
         self.blank = blankSymbol
         self.__right: list[Symbol] = list()
         self.__left: list[Symbol] = list()
+        if word is not None:
+            self.input(word)
 
     # erases all input on the tape
     def clear(self):
@@ -21,7 +27,7 @@ class Tape:
         self.__left = list()
 
     # inputs a new word onto the tape
-    def input(self, word: list[Symbol], offset: int = 0) -> None:
+    def input(self, word: Sequence[Symbol], offset: int = 0) -> None:
         self.clear()
         for i, s in enumerate(word):
             self[i + offset] = s
@@ -165,3 +171,11 @@ class Tape:
             while len(l) != 0 and l[-1] == self.blank:
                 l.pop()
         return self
+
+    def __add__(self, x: Tape) -> Tape:
+        newTape = self.copy()
+        _, tar = newTape.bounds()
+        for sym in x:
+            newTape.write(tar, sym)
+            tar += 1
+        return newTape

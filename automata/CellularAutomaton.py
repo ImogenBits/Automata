@@ -1,6 +1,7 @@
 from __future__ import annotations
 import itertools
 import random
+from typing import Sequence
 from PIL import Image, ImageDraw
 from collections import deque
 from os import error
@@ -71,7 +72,7 @@ class CellularAutomaton:
     def getID(self) -> Tape:
         return self.tape.copy()
 
-    def step(self):
+    def step(self) -> bool:
         hasChanged = False
         tape = self.tape
         neighborhood = self.neighborhood
@@ -85,13 +86,13 @@ class CellularAutomaton:
                 hasChanged = True
                 tape.write(i + cOff, newSymbol)
                 pass
-        if not hasChanged:
-            self.shouldHalt = True
+        return not hasChanged
 
     def __call__(self,
-                 input: list[Symbol] |None = None,
+                 input: Sequence[Symbol] | None = None,
                  randInputlength: int | None = None,
                  log: CALog | None = None,
+                 steps: int | None = None
                  ) -> Tape:
         self.reset()
         if input is not None:
@@ -105,14 +106,24 @@ class CellularAutomaton:
 
         self.shouldHalt = False
         if log is None:
-            while not self.shouldHalt:
-                self.step()
+            if steps is None:
+                while not self.step():
+                    pass
+            else:
+                i = 0
+                while i < steps and not self.step():
+                    pass
         else:
-            i = 0
-            log.log()
-            while not self.shouldHalt and i <= 100:
-                self.step()
-                i += 1
+            if steps is None:
+                log.log()
+                while not self.step():
+                    log.log()
+                log.log()
+            else:
+                i = 0
+                log.log()
+                while i < steps and not self.step():
+                    log.log()
                 log.log()
 
         return self.tape.copy()
