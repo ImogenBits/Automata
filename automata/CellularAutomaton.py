@@ -1,4 +1,5 @@
 from __future__ import annotations
+from automata.Automaton import Automaton
 import itertools
 import random
 from typing import Sequence
@@ -46,7 +47,7 @@ class RuleFunc:
     def __call__(self, input: tuple[Symbol, ...]) -> Symbol:
         return self.dict[input]
 
-class CellularAutomaton:
+class CellularAutomaton(Automaton):
     def __init__(self,
                  rule: RuleFunc | RuleDict | RuleNumber,
                  neighborhood: int = 3,

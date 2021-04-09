@@ -28,7 +28,6 @@ class Tape(Sequence[Symbol]):
 
     # inputs a new word onto the tape
     def input(self, word: Sequence[Symbol], offset: int = 0) -> None:
-        self.clear()
         for i, s in enumerate(word):
             self[i + offset] = s
     

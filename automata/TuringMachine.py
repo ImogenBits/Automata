@@ -1,4 +1,5 @@
 from __future__ import annotations
+from automata.Automaton import Automaton
 from enum import IntEnum
 from typing import Any
 
@@ -48,7 +49,7 @@ class TuringMachineID:
         self.tape = tm.tape.copy()
 
 #* a Turing machine with a single bidirectional tape and head
-class TuringMachine:
+class TuringMachine(Automaton):
     #! TODO: assert proper set inclusions
     def __init__(self,
                  states: set[State],
