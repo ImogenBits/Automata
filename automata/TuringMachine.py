@@ -52,7 +52,7 @@ class TuringMachineID:
 class TuringMachine(Automaton):
     #! TODO: assert proper set inclusions
     def __init__(self,
-                 states: set[State],
+                 states: frozenset[State],
                  tapeAlphabet: set[Symbol],
                  blank: Symbol,
                  inputAlphabet: set[Symbol],
@@ -60,7 +60,7 @@ class TuringMachine(Automaton):
                  finalStates: set[State],
                  transition: TransFunc | TransDict
                  ) -> None:
-        self.states = states.copy()
+        self.states = states
         self.tapeAlphabet = tapeAlphabet.copy()
         self.blank = blank
         self.inputAlphabet = inputAlphabet.copy()

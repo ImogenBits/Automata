@@ -1,20 +1,52 @@
 from __future__ import annotations
 from typing import Generic, TypeVar, Any
 from automata.Tape import Tape
-from automata.Symbol import Symbol, Alphabet
+from automata.Symbol import Symbol, Alphabet, SymbolIter
 
-class TransFunc:
+def anyGeneric(input: Symbol | tuple[Any, ...]) -> bool:
+    if isinstance(input, Symbol):
+        return input.isGeneric
+    for s in input:
+        if isinstance(s, Symbol) and s.isGeneric:
+            return True
+    return False
+
+InType = TypeVar("InType", Symbol, tuple[Any, ...])
+RetType = TypeVar("RetType", Symbol, tuple[Any, ...])
+
+class TransFunc(Generic[InType, RetType]):
     def __init__(self,
-                 rule: dict[Any, Any],
+                 transDict: dict[InType, RetType],
                  alphabet: Alphabet
                  ) -> None:
-        pass
+        self.dict: dict[InType, RetType]
+        self.dict = {}
 
-class Automaton:
+        genericRules: list[tuple[InType, RetType]] = []
+        for input, output in transDict.items():
+            if anyGeneric(input):
+                genericRules.append((input, output))
+            else:
+                self.dict[input] = output
+        
+        for genIn, genOut in genericRules:
+            for input, output in SymbolIter(genIn, genOut, alphabet):
+                if input not in self.dict:
+                    self.dict[input] = output
+
+
+
+class Automaton(Generic[InType, RetType]):
     def __init__(self,
                  alphabet: Alphabet,
-                 transFunc: TransFunc | dict[Any, Any]
+                 transFunc: TransFunc[InType, RetType] | dict[InType, RetType]
                  ) -> None:
         self.alphabet = alphabet
         if isinstance(transFunc, TransFunc):
-            self.transFunc = 
+            self.transFunc = transFunc
+        else:
+            self.transFunc = TransFunc
+
+
+class Log(Generic[InType, RetType]):
+    pass

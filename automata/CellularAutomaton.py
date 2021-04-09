@@ -1,5 +1,5 @@
 from __future__ import annotations
-from automata.Automaton import Automaton
+from automata.Automaton import Automaton, TransFunc
 import itertools
 import random
 from typing import Sequence
@@ -11,54 +11,45 @@ from automata.Symbol import Alphabet, Symbol, SymbolIter
 from automata.Tape import Tape
 
 RuleDict = dict[tuple[Symbol, ...], Symbol]
-RuleNumber = int
 
 def digitAt(num: int, pos: int, base: int = 10) -> int:
     return (num // (base ** pos)) % base
 
-def anyGeneric(input: tuple[Symbol, ...]) -> bool:
-    for s in input:
-        if s.isGeneric:
-            return True
-    return False
 
-
-class RuleFunc:
+class RuleFunc(TransFunc[tuple[Symbol, ...], Symbol]):
     def __init__(self,
-                 rule: RuleDict | RuleNumber,
+                 rule: RuleDict | int,
                  neighborhoood: int,
                  alphabet: Alphabet
                  ) -> None:
-        self.dict: RuleDict = {}
-        if isinstance(rule, RuleNumber):
+        
+        if isinstance(rule, int):
+            ruleDict: RuleDict = {}
             i = 0
             l = len(alphabet)
             for comb in itertools.product(alphabet, repeat=neighborhoood):
                 self.dict[comb] = alphabet[digitAt(rule, i, l)]
                 i += 1
         else:
-            for input, output in rule.items():
-                if anyGeneric(input):
-                    for tup, out in SymbolIter(input, output, alphabet):
-                        self.dict[tup] = out
-                else:
-                    self.dict[input] = output
+            ruleDict = rule
+
+        super().__init__(ruleDict, alphabet)
     
     def __call__(self, input: tuple[Symbol, ...]) -> Symbol:
         return self.dict[input]
 
-class CellularAutomaton(Automaton):
+
+
+class CellularAutomaton(Automaton[tuple[Symbol, ...], Symbol]):
     def __init__(self,
-                 rule: RuleFunc | RuleDict | RuleNumber,
+                 rule: RuleFunc | RuleDict | int,
                  neighborhood: int = 3,
                  alphabet: Alphabet = Alphabet({Symbol("0"), Symbol("1")}),
                  blank: Symbol = Symbol("0")
                  ) -> None:
         self.neighborhood = neighborhood
         self.blank = blank
-        self.alphabet = alphabet.copy()
-        alphSize = len(self.alphabet)
-        self.maximumRuleNumber = alphSize ** (alphSize ** self.neighborhood)
+        self.alphabet = alphabet
 
         if isinstance(rule, RuleFunc):
             self.ruleFunc = rule

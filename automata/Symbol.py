@@ -1,7 +1,7 @@
 from __future__ import annotations
 import itertools
-from os import error
-from typing import Iterable, Iterator
+from os import error, replace
+from typing import Generic, Iterable, Iterator, TypeVar, Any, Callable, overload
 
 class Symbol:
     """
@@ -38,47 +38,62 @@ class Symbol:
         return format(str(self), format_spec)
 
 
-class SymbolIter:
+def replace(tar: Symbol | tuple[Any, ...], gen: Symbol, rep: Symbol) -> Any:
+    if isinstance(tar, Symbol):
+        return replace((tar,), gen, rep)[0]
+    else:
+        ret = list(tar)
+        for i, s in enumerate(ret):
+            if isinstance(s, Symbol) and s == gen:
+                ret[i] = rep
+        return tuple(ret)
+
+InType = TypeVar("InType", Symbol, tuple[Any, ...])
+RetType = TypeVar("RetType", Symbol, tuple[Any, ...])
+class SymbolIter(Generic[InType, RetType]):
     """
-    iterates over all possible replacements of generic symbols with ones from the alphabet
+    iterates over all possible replacements of generic symbols
+    with ones from the alphabet
     """
-    def __init__(self, input: tuple[Symbol, ...], output: Symbol, alph: set[Symbol]) -> None:
+    def __init__(self, input: InType, output: RetType, alph: Alphabet) -> None:
         self.input = input
         self.output = output
         self.alph = alph
+        self.varList: list[Symbol] = []
 
-        self.indices: list[int] = list()
-        for i in range(len(input)):
-            if input[i].isGeneric:
-                self.indices.append(i)
-                if input[i] == output:
-                    self.outIndex = i
-        
-        if self.outIndex is None and output.isGeneric:
-            raise error(f"input tuple {input} does not contain output variable {output}")
+        varCount = 0
+        if isinstance(input, tuple):
+            for i in range(len(input)):
+                if (isinstance(input[i], Symbol)
+                        and input[i].isGeneric
+                        and input[i] not in self.varList):
+                    varCount += 1
+                    self.varList.append(input[i])
+        else:
+            if input.isGeneric:
+                varCount = 1
+                self.varList.append(input)
+            else:
+                varCount = 0
+        self.__iterObj = itertools.product(alph, repeat=varCount)
 
-        self.numVars = len(self.indices)
-        self.vars = itertools.product(alph, repeat=self.numVars)
 
-    def __iter__(self) -> SymbolIter:
+    def __iter__(self) -> SymbolIter[InType, RetType]:
         return self
     
-    def __next__(self) -> tuple[tuple[Symbol, ...], Symbol]:
-        varTuple = self.vars.__next__()
-        resList = list(self.input)
-        i = 0
-        for indx in self.indices:
-            resList[indx] = varTuple[i]
-        
-        if self.output.isGeneric:
-            output = varTuple[self.outIndex]
-        else:
-            output = self.output
-        
-        return (tuple(resList), output)
+    def __next__(self) -> tuple[InType, RetType]:
+        rep = next(self.__iterObj)
+        retIn: Any = self.input
+        retOut: Any = self.output
+        for i, sym in enumerate(rep):
+            retIn = replace(retIn, self.varList[i], sym)
+            retOut = replace(retOut, self.varList[i], sym)
+
+        return retIn, retOut
 
 
-class Alphabet(set[Symbol]):
+
+class Alphabet(frozenset[Symbol]):
     """
     set of symbols that make up the words an automaton accepts
     """
@@ -97,50 +112,52 @@ class Alphabet(set[Symbol]):
     def __getitem__(self, i: int) -> Symbol:
         return self.__list[i]
 
-#* Overloaded functions from set
+#* Overloaded functions from frozenset
  
     def __iter__(self) -> Iterator[Symbol]:
         return iter(self.__list)
 
     def union(self, *s: Iterable[Symbol]) -> Alphabet:
-        retAlph = self.copy()
+        retAlph = self
         for alph in s:
             retAlph =  retAlph | Alphabet(alph)
         return retAlph
 
     def __or__(self, s: Alphabet) -> Alphabet:
-        retAlph = self.copy()
+        retAlph = set(s)
         for sym in s:
             retAlph.add(sym)
-        return retAlph
+        return Alphabet(retAlph)
 
-    def intersection(self, *s: Iterable[Symbol]) -> Alphabet:
-        retAlph = self.copy()
-        for alph in s:
-            retAlph = retAlph & Alphabet(alph)
+    def intersection(self, *others: Iterable[object]) -> Alphabet:
+        retAlph = self
+        for other in others:
+            newSet: set[Symbol] = {s for s in other if isinstance(s, Symbol)}
+            retAlph = retAlph & Alphabet(newSet)
         return retAlph
     
     def __and__(self, s: Alphabet) -> Alphabet:
-        retAlph = Alphabet()
+        retAlph: set[Symbol] = set()
         for sym in s:
             if sym in self:
                 retAlph.add(sym)
         for sym in self:
             if sym in s:
                 retAlph.add(sym)
-        return retAlph
+        return Alphabet(retAlph)
 
-    def difference(self, *s: Iterable[Symbol]) -> Alphabet:
-        retAlph = self.copy()
+    def difference(self, *s: Iterable[object]) -> Alphabet:
+        retAlph = self
         for a in s:
-            retAlph = retAlph - Alphabet(a)
+            newSet: set[Symbol] = {s for s in a if isinstance(s, Symbol)}
+            retAlph = retAlph - Alphabet(newSet)
         return retAlph
     
     def __sub__(self, s: Alphabet) -> Alphabet:
-        retAlph = self.copy()
+        retAlph = set(s)
         for sym in s:
             retAlph.discard(sym)
-        return retAlph
+        return Alphabet(retAlph)
 
     def symmetric_difference(self, s: Iterable[Symbol]) -> Alphabet:
         return self ^ Alphabet(s)
@@ -150,67 +167,3 @@ class Alphabet(set[Symbol]):
 
     def copy(self) -> Alphabet:
         return Alphabet(self.__list)
-
-    def update(self, *s: Iterable[Symbol]) -> None:
-        for alph in s:
-            self |= Alphabet(alph)
-            
-    def __ior__(self, s: Alphabet) -> Alphabet:
-        for sym in s:
-            self.add(sym)
-        return self
-
-    def intersection_update(self, *s: Iterable[Symbol]) -> None:
-        for alph in s:
-            self &= Alphabet(alph)
-
-    def __iand__(self, s: Alphabet) -> Alphabet:
-        for sym in self:
-            if sym not in s:
-                self.remove(sym)
-        return self
-
-    def difference_update(self, *s: Iterable[Symbol]) -> None:
-        for alph in s:
-            self -= Alphabet(alph)
-        
-    def __isub__(self, s: Alphabet) -> Alphabet:
-        for sym in s:
-            self.discard(sym)
-        return self
-
-    def symmetric_difference_update(self, s: Iterable[Symbol]) -> None:
-        self ^= Alphabet(s)
-    
-    def __ixor__(self, s: Alphabet) -> Alphabet:
-        for sym in s:
-            if sym in self:
-                self.remove(sym)
-            else:
-                self.add(sym)
-        return self
-
-    def add(self, element: Symbol) -> None:
-        if element not in self:
-            super().add(element)
-            self.__list.append(element)
-    
-    def remove(self, element: Symbol) -> None:
-        if element in self:
-            super().remove(element)
-            self.__list.remove(element)
-        else:
-            raise KeyError(element)
-
-    def discard(self, element: Symbol) -> None:
-        if element in self:
-            self.remove(element)
-
-    def pop(self) -> Symbol:
-        elem = super().pop()
-        self.__list.remove(elem)
-        return elem
-    
-    def clear(self) -> None:
-        super().clear()
-        self.__list.clear()
