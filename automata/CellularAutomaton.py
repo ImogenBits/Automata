@@ -16,7 +16,7 @@ def digitAt(num: int, pos: int, base: int = 10) -> int:
     return (num // (base ** pos)) % base
 
 
-class RuleFunc(TransFunc[tuple[Symbol, ...], Symbol]):
+class CARuleFunc(TransFunc[tuple[Symbol, ...], Symbol]):
     def __init__(self,
                  rule: RuleDict | int,
                  neighborhoood: int,
@@ -34,27 +34,25 @@ class RuleFunc(TransFunc[tuple[Symbol, ...], Symbol]):
             ruleDict = rule
 
         super().__init__(ruleDict, alphabet)
-    
-    def __call__(self, input: tuple[Symbol, ...]) -> Symbol:
-        return self.dict[input]
 
 
 
 class CellularAutomaton(Automaton[tuple[Symbol, ...], Symbol]):
+    FuncType = CARuleFunc
+    
     def __init__(self,
-                 rule: RuleFunc | RuleDict | int,
+                 rule: CARuleFunc | RuleDict | int,
                  neighborhood: int = 3,
                  alphabet: Alphabet = Alphabet({Symbol("0"), Symbol("1")}),
                  blank: Symbol = Symbol("0")
                  ) -> None:
         self.neighborhood = neighborhood
         self.blank = blank
-        self.alphabet = alphabet
 
-        if isinstance(rule, RuleFunc):
+        if isinstance(rule, CARuleFunc):
             self.ruleFunc = rule
         else:
-            self.ruleFunc = RuleFunc(rule, neighborhood, alphabet)
+            self.ruleFunc = CARuleFunc(rule, neighborhood, alphabet)
 
         self.tape = Tape(blank)
     

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import itertools
 from os import error, replace
-from typing import Generic, Iterable, Iterator, TypeVar, Any, Callable, overload
+from typing import Generic, Iterable, Iterator, TypeVar, Any
 
 class Symbol:
     """

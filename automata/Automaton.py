@@ -34,19 +34,27 @@ class TransFunc(Generic[InType, RetType]):
                 if input not in self.dict:
                     self.dict[input] = output
 
+    def __call__(self, input: InType) -> RetType:
+        return self.dict[input]
 
+
+class Log:
+    pass
 
 class Automaton(Generic[InType, RetType]):
+    FuncType = TransFunc[InType, RetType]
+    LogType = Log
+    StorageType = Storage
+
     def __init__(self,
+                 transFunc: TransFunc[InType, RetType]
+                          | dict[InType, RetType],
                  alphabet: Alphabet,
-                 transFunc: TransFunc[InType, RetType] | dict[InType, RetType]
                  ) -> None:
         self.alphabet = alphabet
         if isinstance(transFunc, TransFunc):
             self.transFunc = transFunc
         else:
-            self.transFunc = TransFunc
-
-
-class Log(Generic[InType, RetType]):
-    pass
+            self.transFunc = self.FuncType(transFunc, alphabet)
+        
+        self.tape = Tape(blank)

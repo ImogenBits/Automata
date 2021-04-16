@@ -1,7 +1,8 @@
 from __future__ import annotations
 from math import ceil
-from typing import Sequence
+from typing import Sequence, Any
 from automata.Symbol import Symbol
+from automata.Storage import Storage
 
 def getEdge(a: int, step: int) -> int:
     return a + (step - (a % step))
@@ -9,7 +10,7 @@ def getEdge(a: int, step: int) -> int:
 #* The tape of a Turing machine
 #  has a potentially infinite ist of symbols
 #  only the so far accessed portion is stored
-class Tape(Sequence[Symbol]):
+class Tape(Storage):
     # has a list storing the used portion and a blank symbol on the rest of it 
     def __init__(self,
                  blankSymbol: Symbol,
@@ -119,17 +120,6 @@ class Tape(Sequence[Symbol]):
                 tar += 1
             return tape
 
-    def __getitem__(self,
-                    key: int | slice | tuple[slice, int],
-                   ) -> Symbol | Tape:
-        if isinstance(key, int):
-            return self.read(key)
-        elif isinstance(key, slice):
-            return self.copy(key.start, key.stop, key.step)
-        else:
-            slc = key[0]
-            return self.copy(slc.start, slc.stop, slc.step, key[1])
-
     def bounds(self) -> tuple[int, int]:
         return -1 * len(self.__left), len(self.__right) - 1
 
@@ -159,12 +149,6 @@ class Tape(Sequence[Symbol]):
         r = [str(c) for c in self.__right[1:]]
         return l + [f"|{self[0]}|"] + r
 
-    def __str__(self) -> str:
-        return "".join(self.toStrList())
-    
-    def __repr__(self) -> str:
-        return f"""[{", ".join(self.toStrList())}]"""
-    
     def trim(self) -> Tape:
         for l in [self.__left, self.__right]:
             while len(l) != 0 and l[-1] == self.blank:
