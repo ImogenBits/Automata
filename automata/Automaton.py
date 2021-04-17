@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Generic, TypeVar, Any
-from automata.Tape import Tape
+from automata.Tape import Storage
 from automata.Symbol import Symbol, Alphabet, SymbolIter
 
 def anyGeneric(input: Symbol | tuple[Any, ...]) -> bool:
@@ -57,4 +57,4 @@ class Automaton(Generic[InType, RetType]):
         else:
             self.transFunc = self.FuncType(transFunc, alphabet)
         
-        self.tape = Tape(blank)
+        self.storage = self.StorageType()

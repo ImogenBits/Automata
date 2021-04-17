@@ -39,7 +39,7 @@ class CARuleFunc(TransFunc[tuple[Symbol, ...], Symbol]):
 
 class CellularAutomaton(Automaton[tuple[Symbol, ...], Symbol]):
     FuncType = CARuleFunc
-    
+
     def __init__(self,
                  rule: CARuleFunc | RuleDict | int,
                  neighborhood: int = 3,
