@@ -1,7 +1,62 @@
 from __future__ import annotations
 from math import ceil
-from typing import Sequence, Any
+from typing import Iterator, Sequence, Any
 from automata.Symbol import Symbol
+
+END_SYMBOL = Symbol("__END__")
+
+class BoundedTape(Sequence[Symbol]):
+    def __init__(self, word: Sequence[Symbol] | None = None) -> None:
+        self.__arr: list[Symbol] = []
+        if word is not None:
+            self.input(word) 
+
+    def clear(self) -> None:
+        self.__arr = []
+
+    def input(self, word: Sequence[Symbol]) -> None:
+        self.__arr = [END_SYMBOL] * (len(word) + 1)
+        for i, s in enumerate(word):
+            self.__arr[i] = s
+
+    def read(self, pos: int) -> Symbol:
+        return self.__arr[pos]
+
+    def copy(self,
+             start: int | None = None,
+             stop: int | None = None,
+             step: int = 1,
+             ) -> BoundedTape:
+        return BoundedTape(self.__arr[start:stop:step])
+
+    def __getitem__(self,
+                    s: int | slice,
+                   ) -> Any:
+        if isinstance(s, int):
+            return self.read(s)
+        else:
+            return self.copy(s.start, s.stop, s.step)
+    
+    def bounds(self) -> tuple[int, int]:
+        return 0, len(self.__arr) - 1
+    
+    def __iter__(self) -> Iterator[Symbol]:
+        return iter(self.__arr)
+
+    def __len__(self) -> int:
+        return len(self.__arr)
+    
+    def toStrList(self) -> list[str]:
+        return [str(c) for c in self.__arr]
+    
+    def __str__(self) -> str:
+        return "".join(self.toStrList())
+        
+    def __repr__(self) -> str:
+        return f"""[{", ".join(self.toStrList())}]"""
+
+    def __add__(self, x: Any) -> BoundedTape:
+        return BoundedTape(self.__arr[:-1] + [c for c in x])
 
 
 def getEdge(a: int, step: int) -> int:
@@ -10,22 +65,22 @@ def getEdge(a: int, step: int) -> int:
 #* The tape of a Turing machine
 #  has a potentially infinite ist of symbols
 #  only the so far accessed portion is stored
-class Tape(Sequence[Symbol]):
+class Tape(BoundedTape):
     # has a list storing the used portion and a blank symbol on the rest of it 
     def __init__(self,
                  blankSymbol: Symbol,
                  word: Sequence[Symbol] | None = None
                  ) -> None:
         self.blank = blankSymbol
-        self.__right: list[Symbol] = list()
-        self.__left: list[Symbol] = list()
+        self.__right: list[Symbol] = []
+        self.__left: list[Symbol] = []
         if word is not None:
             self.input(word)
 
     # erases all input on the tape
     def clear(self):
-        self.__right = list()
-        self.__left = list()
+        self.__right = []
+        self.__left = []
 
     # inputs a new word onto the tape
     def input(self, word: Sequence[Symbol], offset: int = 0) -> None:
@@ -159,12 +214,6 @@ class Tape(Sequence[Symbol]):
         l = [str(c) for c in self.__left[::-1]]
         r = [str(c) for c in self.__right[1:]]
         return l + [f"|{self[0]}|"] + r
-
-    def __str__(self) -> str:
-        return "".join(self.toStrList())
-        
-    def __repr__(self) -> str:
-        return f"""[{", ".join(self.toStrList())}]"""
 
     def trim(self) -> Tape:
         for l in [self.__left, self.__right]:
