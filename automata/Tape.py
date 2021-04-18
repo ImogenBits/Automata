@@ -18,6 +18,12 @@ class BoundedTape(Sequence[Symbol]):
         self.__arr = [END_SYMBOL] * (len(word) + 1)
         for i, s in enumerate(word):
             self.__arr[i] = s
+            
+    def write(self, pos: int, symbol: Symbol) -> None:
+        self.__arr[pos] = symbol
+        
+    def __setitem__(self, pos: int, symbol: Symbol) -> None:
+        return self.write(pos, symbol)
 
     def read(self, pos: int) -> Symbol:
         return self.__arr[pos]
