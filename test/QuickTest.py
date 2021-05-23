@@ -1,25 +1,15 @@
 from automata.Tape import *
 from automata.Symbol import *
+from automata.CellularAutomaton import *
 
 
 
 
 
-class A:
-    var = 1
 
-    def __init__(self):
-        self.pr()
+ca = CellularAutomaton(94)
+log = CALog(ca, 10, 200, 100)
 
-    def pr(self):
-        print(self.var)
+ca([Symbol("1", (1, 1, 1))], log, 100)
 
-class B(A):
-    var = 2
-    def __init__(self):
-        print("ASDAS")
-        super().__init__()
-
-
-o: A
-o = B()
+log.createImage().show()

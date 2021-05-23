@@ -1,7 +1,7 @@
 from __future__ import annotations
 import itertools
 from os import error, replace
-from typing import Generic, Iterable, Iterator, TypeVar, Any
+from typing import AbstractSet, Generic, Iterable, Iterator, TypeVar, Any
 
 class Symbol:
     """
@@ -22,8 +22,8 @@ class Symbol:
         self.__name__ = c
         self.color = color
 
-    def __eq__(self, o: Symbol) -> bool:
-        return self.c == o.c
+    def __eq__(self, o: object) -> bool:
+        return isinstance(o, Symbol) and self.c == o.c
 
     def __hash__(self) -> int:
         return hash(self.c)
@@ -92,15 +92,16 @@ class SymbolIter(Generic[InType, RetType]):
         return retIn, retOut
 
 
+class Alphabet(list[Symbol]):
+    def fillColors(self) -> None:
+        pass
 
+"""
 class Alphabet(frozenset[Symbol]):
-    """
-    set of symbols that make up the words an automaton accepts
-    """
-
     def __init__(self, iterable: Iterable[Symbol] | None = None) -> None:
         if iterable is not None:
-            super().__init__(iterable)
+            s = super()
+            s.__init__(iterable)
             self.__list = list(iterable)
         else:
             super().__init__()
@@ -123,10 +124,11 @@ class Alphabet(frozenset[Symbol]):
             retAlph =  retAlph | Alphabet(alph)
         return retAlph
 
-    def __or__(self, s: Alphabet) -> Alphabet:
-        retAlph = set(s)
+    def __or__(self, s: AbstractSet[Any]) -> Alphabet:
+        retAlph = set(self)
         for sym in s:
-            retAlph.add(sym)
+            if isinstance(sym, Symbol):
+                retAlph.add(sym)
         return Alphabet(retAlph)
 
     def intersection(self, *others: Iterable[object]) -> Alphabet:
@@ -136,11 +138,8 @@ class Alphabet(frozenset[Symbol]):
             retAlph = retAlph & Alphabet(newSet)
         return retAlph
     
-    def __and__(self, s: Alphabet) -> Alphabet:
+    def __and__(self, s: AbstractSet[Any]) -> Alphabet:
         retAlph: set[Symbol] = set()
-        for sym in s:
-            if sym in self:
-                retAlph.add(sym)
         for sym in self:
             if sym in s:
                 retAlph.add(sym)
@@ -153,8 +152,8 @@ class Alphabet(frozenset[Symbol]):
             retAlph = retAlph - Alphabet(newSet)
         return retAlph
     
-    def __sub__(self, s: Alphabet) -> Alphabet:
-        retAlph = set(s)
+    def __sub__(self, s: AbstractSet[Any]) -> Alphabet:
+        retAlph = set(self)
         for sym in s:
             retAlph.discard(sym)
         return Alphabet(retAlph)
@@ -162,8 +161,10 @@ class Alphabet(frozenset[Symbol]):
     def symmetric_difference(self, s: Iterable[Symbol]) -> Alphabet:
         return self ^ Alphabet(s)
     
-    def __xor__(self, s: Alphabet) -> Alphabet:
+    def __xor__(self, s: AbstractSet[Any]) -> Alphabet:
         return (self | s) - (self & s)
 
     def copy(self) -> Alphabet:
         return Alphabet(self.__list)
+
+"""

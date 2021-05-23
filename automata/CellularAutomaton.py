@@ -1,34 +1,38 @@
 from __future__ import annotations
-from automata.Automaton import Automaton, TransFunc
 import itertools
 import random
 from typing import Sequence
-from PIL import Image, ImageDraw
 from collections import deque
 from os import error
 
-from automata.Symbol import Alphabet, Symbol, SymbolIter
+from automata.Symbol import Alphabet, Symbol
 from automata.Tape import Tape
+from automata.Automaton import Automaton, TransFunc, Log, ID
 
 RuleDict = dict[tuple[Symbol, ...], Symbol]
 
 def digitAt(num: int, pos: int, base: int = 10) -> int:
     return (num // (base ** pos)) % base
 
+class CAID(ID):
+    pass
+
+class CALog(Log[CAID]):
+    pass
 
 class CARuleFunc(TransFunc[tuple[Symbol, ...], Symbol]):
     def __init__(self,
                  rule: RuleDict | int,
                  neighborhoood: int,
                  alphabet: Alphabet
-                 ) -> None:
+                ) -> None:
         
         if isinstance(rule, int):
             ruleDict: RuleDict = {}
             i = 0
             l = len(alphabet)
             for comb in itertools.product(alphabet, repeat=neighborhoood):
-                self.dict[comb] = alphabet[digitAt(rule, i, l)]
+                ruleDict[comb] = alphabet[digitAt(rule, i, l)]
                 i += 1
         else:
             ruleDict = rule
@@ -37,13 +41,15 @@ class CARuleFunc(TransFunc[tuple[Symbol, ...], Symbol]):
 
 
 
-class CellularAutomaton(Automaton[tuple[Symbol, ...], Symbol]):
-    FuncType = CARuleFunc
+class CellularAutomaton(Automaton[tuple[Symbol, ...], Symbol, CAID, Tape]):
+    FuncT = CARuleFunc
+    LogT = CALog
+    TapeT = Tape
 
     def __init__(self,
                  rule: CARuleFunc | RuleDict | int,
                  neighborhood: int = 3,
-                 alphabet: Alphabet = Alphabet({Symbol("0"), Symbol("1")}),
+                 alphabet: Alphabet = Alphabet([Symbol("0"), Symbol("1")]),
                  blank: Symbol = Symbol("0")
                  ) -> None:
         self.neighborhood = neighborhood
@@ -55,12 +61,9 @@ class CellularAutomaton(Automaton[tuple[Symbol, ...], Symbol]):
             self.ruleFunc = CARuleFunc(rule, neighborhood, alphabet)
 
         self.tape = Tape(blank)
-    
-    def reset(self):
-        self.tape.clear()
 
-    def getID(self) -> Tape:
-        return self.tape.copy()
+    def getID(self) -> CAID:
+        return CAID(self)
 
     def step(self) -> bool:
         hasChanged = False
@@ -80,97 +83,20 @@ class CellularAutomaton(Automaton[tuple[Symbol, ...], Symbol]):
 
     def __call__(self,
                  input: Sequence[Symbol] | None = None,
-                 randInputlength: int | None = None,
                  log: CALog | None = None,
-                 steps: int | None = None
+                 steps: int | None = None,
+                 randInputlength: int | None = None,
                  ) -> Tape:
         self.reset()
-        if input is not None:
-            self.tape.input(input)
-        elif input is None and randInputlength:
+
+        if input is None and randInputlength is not None:
             alphList = list(self.alphabet)
-            self.tape.input([random.choice(alphList)
-                             for _ in range(randInputlength)])
-        else:
+            input = [random.choice(alphList) for _ in range(randInputlength)]
+        
+        if input is None:
             raise error("provide either input or randInputLength")
 
-        self.shouldHalt = False
-        if log is None:
-            if steps is None:
-                while not self.step():
-                    pass
-            else:
-                i = 0
-                while i < steps and not self.step():
-                    pass
-        else:
-            if steps is None:
-                log.log()
-                while not self.step():
-                    log.log()
-                log.log()
-            else:
-                i = 0
-                log.log()
-                while i < steps and not self.step():
-                    log.log()
-                log.log()
+        self.run(input, log, steps)
 
         return self.tape.copy()
 
-
-class CALog:
-    def __init__(self,
-                 ca: CellularAutomaton,
-                 scale: int = 10,
-                 width: int | None = 200,
-                 generations: int | None = 100
-                 ) -> None:
-        self.ca = ca
-        self.scale = scale
-        self.width = width
-        self.generations = generations
-        self.arr: list[Tape] = []
-
-    def log(self) -> None:
-        self.arr.append(self.ca.getID())
-        pass
-
-    def createImage(self) -> Image.Image:
-        generations, width = self.generations, self.width
-        if generations is None:
-            generations = len(self.arr)
-        arr = self.arr[:generations]
-
-        if width is None:
-            width = 0
-            for t in arr:
-                width = max(width, len(t))
-                
-        lBound, rBound = 0, 0
-        for t in arr:
-            l, r = t.bounds()
-            lBound = min(lBound, l)
-            rBound = max(rBound, r)
-        
-        if rBound - lBound <= width:
-            imStart = lBound - ((width - (rBound - lBound)) // 2)
-        else:
-            imStart = -((width - len(arr[0])) // 2)
-        imEnd = imStart + width
-
-        buffer = 3 * self.scale
-        imWidth = self.scale * width + 2 * buffer
-        imHeight = self.scale * generations + 2 * buffer
-
-        self.image = Image.new("RGB", (imWidth, imHeight), "#000000")
-        image = ImageDraw.ImageDraw(self.image)
-
-        for i, t in enumerate(arr):
-            for j, symbol in enumerate(t.copy(imStart, imEnd)):
-                x = buffer + self.scale * j
-                y = buffer + self.scale * i
-                image.rectangle([x, y, x + self.scale, y + self.scale],
-                                fill = symbol.color)
-
-        return self.image

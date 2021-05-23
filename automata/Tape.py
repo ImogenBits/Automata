@@ -3,7 +3,7 @@ from math import ceil
 from typing import Iterator, Sequence, Any
 from automata.Symbol import Symbol
 
-END_SYMBOL = Symbol("__END__")
+END_SYMBOL = Symbol("END")
 
 class BoundedTape(Sequence[Symbol]):
     def __init__(self, word: Sequence[Symbol] | None = None) -> None:
@@ -124,11 +124,13 @@ class Tape(BoundedTape):
     def copy(self,
              start: int | None = None,
              stop: int | None = None,
-             step: int = 1,
+             step: int | None = 1,
              offset: int = 0,
              moveToStart: bool = False
              ) -> Tape:
-        
+        if step is None:
+            step = 1
+
         if start is None:
             if step > 0:
                 start = -1 * len(self.__left)
